@@ -1,14 +1,24 @@
-FROM mcr.microsoft.com/dotnet/sdk:7.0-alpine AS build-env
+FROM mcr.microsoft.com/dotnet/sdk:7.0-jammy AS build-env
 
-WORKDIR /app
+WORKDIR /base
+
+COPY *.csproj .
+
+RUN dotnet restore -r linux-x64
 
 COPY . .
 
-RUN dotnet restore -r linux-musl-x64
+RUN dotnet publish -c Release -o /publish -r linux-x64 --no-restore
 
-RUN dotnet publish -c Release -o /app -r linux-musl-x64 --no-restore
+FROM mcr.microsoft.com/dotnet/runtime-deps:7.0-jammy-amd64
 
-CMD [ "echo", "Hola mundo" ]
+WORKDIR /app
+
+COPY --from=build-env publish .
+
+ENTRYPOINT [ "dotnet" ]
+
+CMD [ "Microservice.dll" ]
 
 
 
